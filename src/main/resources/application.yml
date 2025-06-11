@@ -1,12 +1,15 @@
 spring:
   application:
     name: restoreit
+
   shell:
     interactive:
       enabled: true
   main:
     banner-mode: off
     web-application-type: none
+    log-startup-info: false
 logging:
   level:
     org.jline: OFF
+    org.mongodb: OFF

@@ -76,9 +76,12 @@ public enum DatabaseType {
 
         switch (this) {
             case MYSQL -> {
+                File cnf = crearArchivoMyCnfTemporal(host, user, pass);
                 comando = List.of(
-                        "mysqldump", "-h", host, "-P", puerto,
-                        "-u" + user, "-p" + pass, db
+                        "mysqldump",
+                        "--defaults-extra-file=" + cnf.getAbsolutePath(),
+                        "-P", puerto,
+                        db
                 );
                 builder = new ProcessBuilder(comando);
                 builder.redirectOutput(outputFile);
@@ -153,5 +156,26 @@ public enum DatabaseType {
         }
 
         return outputFile;
+    }
+
+
+    private File crearArchivoMyCnfTemporal(String host, String user, String pass) throws IOException {
+        File tempFile = File.createTempFile("mysql-", ".cnf");
+        tempFile.deleteOnExit();
+
+        String contenido = """
+        [client]
+        user=%s
+        password=%s
+        host=%s
+        """.formatted(user, pass, host);
+
+        java.nio.file.Files.writeString(tempFile.toPath(), contenido);
+
+        // Solo lectura para el usuario actual (seguridad en Unix)
+        tempFile.setReadable(false, false); // No readable por otros
+        tempFile.setReadable(true, true);   // Sí por el dueño
+
+        return tempFile;
     }
 }

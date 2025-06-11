@@ -1,5 +1,6 @@
 package com.panchoarc.restoreit.utils;
 
+import org.jline.builtins.Completers;
 import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -45,5 +46,26 @@ public class InputPrompter {
 
     public String promptPassword(LineReader reader, String label) {
         return reader.readLine(label + ": ", '*');
+    }
+
+    public String promptFilePath(String promptText) {
+        Completer fileCompleter = new Completers.FileNameCompleter();
+
+
+        LineReader reader = LineReaderBuilder.builder()
+                .terminal(terminal)
+                .completer(fileCompleter)
+                .build();
+        String input;
+        while (true) {
+            try {
+                input = reader.readLine(promptText + ": ");
+                if (input != null && !input.isBlank()) {
+                    return input;
+                }
+            } catch (Exception e) {
+                System.err.println("Error leyendo el archivo: " + e.getMessage());
+            }
+        }
     }
 }
