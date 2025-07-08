@@ -2,32 +2,32 @@
 
 package com.panchoarc.restoreit.command;
 
-import com.panchoarc.restoreit.db.DatabaseConnector;
 import com.panchoarc.restoreit.db.DatabaseConnectorFactory;
+import com.panchoarc.restoreit.db.DatabaseConnectorStrategy;
 import com.panchoarc.restoreit.enums.DatabaseType;
 import com.panchoarc.restoreit.utils.CommandAvailabilityChecker;
 import com.panchoarc.restoreit.utils.InputPrompter;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.UserInterruptException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.command.annotation.Command;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 
 @Component
 @Command(group = "Backup Commands")
 public class BackupCommand {
-    @Autowired
-    @Lazy
-    private LineReader lineReader;
 
-    @Autowired
-    private InputPrompter inputPrompter;
+    private final LineReader lineReader;
+    private final InputPrompter inputPrompter;
+
+    public BackupCommand(@Lazy LineReader lineReader, InputPrompter inputPrompter) {
+        this.lineReader = lineReader;
+        this.inputPrompter = inputPrompter;
+    }
 
 
     @Command(command = "backup", alias = {"b"})
@@ -48,7 +48,7 @@ public class BackupCommand {
                 pass = inputPrompter.promptPassword(lineReader, "Contraseña");
             } else {
                 user = inputPrompter.promptConDefault(lineReader, "Usuario (opcional)", "");
-                pass = inputPrompter.promptConDefault(lineReader, "Contraseña (opcional)","");
+                pass = inputPrompter.promptConDefault(lineReader, "Contraseña (opcional)", "");
             }
 
             String path = inputPrompter.promptObligatorio(lineReader, "Ruta destino del backup (ej: backup.sql)");
@@ -57,7 +57,7 @@ public class BackupCommand {
                 return "\n❌ El comando de backup '" + dbType.getBackupCommand() + "' no está disponible.\n" + mensajeDeInstalacion(dbType);
             }
 
-            DatabaseConnector connector = DatabaseConnectorFactory.getConnector(dbType);
+            DatabaseConnectorStrategy connector = DatabaseConnectorFactory.getConnector(dbType);
             if (!connector.canConnect(host, puerto, db, user, pass)) {
                 return "\n❌ No se pudo conectar a la base de datos. Verifique los datos ingresados.";
             }
@@ -90,41 +90,12 @@ public class BackupCommand {
         }
     }
 
-    private boolean ejecutarComando(String comando) throws Exception {
-        String os = System.getProperty("os.name").toLowerCase();
-        System.out.println("COMANDO: " + comando);
-
-        ProcessBuilder builder;
-
-        if (os.contains("win")) {
-            builder = new ProcessBuilder("cmd.exe", "/c", comando);
-        } else {
-            builder = new ProcessBuilder("bash", "-c", comando);
-        }
-
-        // Establecer el directorio actual como el directorio base
-        // Esto apunta al directorio desde el que se ejecutó el JAR
-        builder.directory(new File(System.getProperty("user.dir") + File.separator + "backups"));
-        builder.redirectErrorStream(true);
-
-        Process process = builder.start();
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-        }
-
-        int exitCode = process.waitFor();
-        return exitCode == 0;
-    }
-
 
     private String mensajeDeInstalacion(DatabaseType dbType) {
         return switch (dbType) {
             case MYSQL -> "Puedes descargar 'mysqldump' desde:\nhttps://dev.mysql.com/downloads/utilities/";
-            case POSTGRESQL -> "Puedes instalar 'pg_dump' con:\n- Linux: `sudo apt install postgresql-client`\n- macOS: `brew install libpq`\n- Windows: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads";
+            case POSTGRESQL ->
+                    "Puedes instalar 'pg_dump' con:\n- Linux: `sudo apt install postgresql-client`\n- macOS: `brew install libpq`\n- Windows: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads";
             case MONGODB -> "Puedes descargar 'mongodump' desde:\nhttps://www.mongodb.com/try/download/database-tools";
             case SQLITE -> "Puedes descargar 'sqlite3' desde:\nhttps://www.sqlite.org/download.html";
         };

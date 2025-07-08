@@ -4,7 +4,6 @@ import com.panchoarc.restoreit.enums.DatabaseType;
 import com.panchoarc.restoreit.utils.CommandAvailabilityChecker;
 import com.panchoarc.restoreit.utils.InputPrompter;
 import org.jline.reader.LineReader;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.command.annotation.Command;
 import org.springframework.stereotype.Component;
@@ -16,12 +15,13 @@ import java.io.IOException;
 @Command(group = "Restore Commands")
 public class RestoreCommand {
 
-    @Autowired
-    @Lazy
-    private LineReader lineReader;
+    private final LineReader lineReader;
+    private final InputPrompter inputPrompter;
 
-    @Autowired
-    private InputPrompter inputPrompter;
+    public RestoreCommand(@Lazy LineReader lineReader, InputPrompter inputPrompter) {
+        this.lineReader = lineReader;
+        this.inputPrompter = inputPrompter;
+    }
 
     @Command(command = "restore", alias = {"r"})
     public void restore() {
@@ -159,7 +159,8 @@ public class RestoreCommand {
     private String mensajeDeInstalacion(DatabaseType dbType) {
         return switch (dbType) {
             case MYSQL -> "Puedes descargar 'mysqldump' desde:\nhttps://dev.mysql.com/downloads/utilities/";
-            case POSTGRESQL -> "Puedes instalar 'pg_dump' con:\n- Linux: `sudo apt install postgresql-client`\n- macOS: `brew install libpq`\n- Windows: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads";
+            case POSTGRESQL ->
+                    "Puedes instalar 'pg_dump' con:\n- Linux: `sudo apt install postgresql-client`\n- macOS: `brew install libpq`\n- Windows: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads";
             case MONGODB -> "Puedes descargar 'mongodump' desde:\nhttps://www.mongodb.com/try/download/database-tools";
             case SQLITE -> "Puedes descargar 'sqlite3' desde:\nhttps://www.sqlite.org/download.html";
         };

@@ -6,11 +6,11 @@ import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import com.panchoarc.restoreit.db.DatabaseConnector;
+import com.panchoarc.restoreit.db.DatabaseConnectorStrategy;
 
 import java.util.Collections;
 
-public class MongoDBConnector implements DatabaseConnector {
+public class MongoDBConnector implements DatabaseConnectorStrategy {
     @Override
     public boolean canConnect(String host, String port, String db, String user, String password) {
         try {
