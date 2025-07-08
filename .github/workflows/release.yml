@@ -22,7 +22,7 @@ jobs:
       - name: Construir el .jar
         run: mvn clean package -DskipTests
 
-      - name: Crear Release en GitHub
+      - name: Crear release y subir artefacto
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -32,13 +32,6 @@ jobs:
 
             ✅ Cambios:
             - Detalles a completar manualmente o desde changelog.md
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Subir artefacto .jar al release
-        uses: softprops/action-gh-release@v2
-        with:
           files: target/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
