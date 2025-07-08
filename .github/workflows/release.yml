@@ -1,37 +1,50 @@
-name: Build and Release
+name: Build and Release with Changelog
 
 on:
   push:
     tags:
-      - 'v*'  # solo se ejecuta al hacer push de un tag como v1.0.0
+      - 'v*'  # Se activa al pushear un tag como v0.1.0
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para acceder al historial de commits y tags
 
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'  # o la versión que uses
+          java-version: '17'
 
       - name: Construir el .jar
         run: mvn clean package -DskipTests
+
+      - name: Renombrar .jar con el tag del release
+        run: |
+          TAG_NAME=${{ github.ref_name }}
+          VERSION=${TAG_NAME#v}  # elimina la 'v' del tag si la tiene
+          ORIGINAL_JAR=$(ls target/*.jar | head -n 1)
+          mv "$ORIGINAL_JAR" "target/restoreit-cli-$VERSION.jar"
+
+      - name: Generar changelog automático
+        uses: heinrichreimer/action-github-changelog-generator@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          user: panchoarc
+          project: restoreit-cli
+          futureRelease: ${{ github.ref_name }}
 
       - name: Crear release y subir artefacto
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body: |
-            🚀 Nueva versión publicada automáticamente.
-
-            ✅ Cambios:
-            - Detalles a completar manualmente o desde changelog.md
-          files: target/*.jar
+          body_path: CHANGELOG.md
+          files: target/restoreit-cli-*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
